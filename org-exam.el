@@ -15,7 +15,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Author: Daniel Muñoz
+;; Author: Daniel Muñoz <demunoz2@uc.cl>
 ;; Keywords: text, convenience, abbrev
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "25.1"))
