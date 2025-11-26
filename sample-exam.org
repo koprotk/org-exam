@@ -1,0 +1,49 @@
+#+AUTHOR: Daniel Muñoz
+#+TITLE: Sample Exam
+#+LANGUAGE: es
+#+LATEX_CLASS_OPTIONS: addpoints,answers
+
+* Pregunta 1. Responde las siguientes preguntas
+** ¿Cuál es el caballo blanco de Napoleón?
+:PROPERTIES:
+:POINTS: 3
+:END:
+** Un estudiante tiene 5 manzanas responda:
+*** Si pierde 3
+:PROPERTIES:
+:POINTS: 4
+:END:
+*** Si gana 2
+
+* Pregunta 2
+:PROPERTIES:
+:POINTS: 3
+:END:
+¿Cuál es el número atómico del oxígeno?
+
+* Pregunta 3 (Usando @correct en lista ordenada)
+- alternativa
+- alternativa
+- alternativa
+- @correct alternativa correcta
+
+* Pregunta 4 (Usando checkboxes)
++ alternativa A
++ alternativa B
++ @correct correcta
++ no correcta
+  
+* Item 1
+** Pregunta 1
+- alternativa 1
+- alternativa 2
+- alternativa 3
+- @correct alternativa 4
+
+** Pregunta 2
++ alternativa 1
++ alternativa 2
++ alternativa 3
++ alternativa 4
+
+  
