@@ -34,7 +34,6 @@
 ;; Export with: C-c C-e E o
 
 ;;; Code:
-
 (require 'ox-latex)
 
 ;;; Setup exam class in org-latex-classes
@@ -74,6 +73,7 @@
     (section . org-exam-section)
     (plain-list . org-exam-plain-list)
     (item . org-exam-item)
+    (drawer . org-exam-drawer)
     (template . org-exam-template)))
 
 ;;; Helper Functions
@@ -221,6 +221,22 @@ CONTENTS is the section contents. INFO is a plist holding
 contextual information."
   ;; Return contents as-is; we handle everything in headline transcoder
   contents)
+
+;;; Drawer Transcoder
+
+(defun org-exam-drawer (drawer contents info)
+  "Transcode a DRAWER element from Org to LaTeX.
+CONTENTS is the contents of the drawer. INFO is a plist holding
+contextual information."
+  (let ((name (org-element-property :drawer-name drawer)))
+    (cond
+     ;; Solution drawer becomes \begin{solution}...\end{solution}
+     ((string-match-p "^solution$" (downcase name))
+      (concat "\\begin{solution}\n"
+              contents
+              "\\end{solution}\n"))
+     ;; Other drawers - use default export
+     (t (org-latex-drawer drawer contents info)))))
 
 ;;; Plain List Transcoder
 

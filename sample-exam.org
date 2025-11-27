@@ -1,49 +1,129 @@
-#+AUTHOR: Daniel Muñoz
 #+TITLE: Sample Exam
-#+LANGUAGE: es
-#+LATEX_CLASS_OPTIONS: addpoints,answers
+#+AUTHOR: Professor Name
+#+DATE: Fall 2025
+#+LATEX_CLASS: exam
+#+LATEX_HEADER: \usepackage{amsmath}
+#+LATEX_HEADER: \usepackage{amssymb}
+#+LATEX_CLASS_OPTIONS: noanswers
 
-* Pregunta 1. Responde las siguientes preguntas
-** ¿Cuál es el caballo blanco de Napoleón?
-:PROPERTIES:
-:POINTS: 3
-:END:
-** Un estudiante tiene 5 manzanas responda:
-*** Si pierde 3
-:PROPERTIES:
-:POINTS: 4
-:END:
-*** Si gana 2
+* Question 1 [10 pts]
 
-* Pregunta 2
-:PROPERTIES:
-:POINTS: 3
-:END:
-¿Cuál es el número atómico del oxígeno?
+This is the first question with 10 points.
 
-* Pregunta 3 (Usando @correct en lista ordenada)
-- alternativa
-- alternativa
-- alternativa
-- @correct alternativa correcta
+** Part a [4 pts]
 
-* Pregunta 4 (Usando checkboxes)
-+ alternativa A
-+ alternativa B
-+ @correct correcta
-+ no correcta
-  
-* Item 1
-** Pregunta 1
-- alternativa 1
-- alternativa 2
-- alternativa 3
-- @correct alternativa 4
+This is part a worth 4 points.
 
-** Pregunta 2
-+ alternativa 1
-+ alternativa 2
-+ alternativa 3
-+ alternativa 4
+** Part b [6 pts]
 
-  
+This is part b worth 6 points.
+
+*** Subpart i [3 pts]
+
+This is subpart i worth 3 points.
+
+*** Subpart ii [3 pts]
+
+This is subpart ii worth 3 points.
+
+* Question 2 [15 pts]
+
+Calculate the derivative of $f(x) = x^2 + 3x + 2$.
+
+** Part a [5 pts]
+
+Find $f'(x)$.
+
+** Part b [10 pts]
+
+Evaluate $f'(2)$.
+
+* Question 3 [20 pts]
+
+A more complex question with multiple parts.
+
+** Part a [8 pts]
+
+First part of the question.
+
+*** Subpart i [4 pts]
+
+First subpart.
+
+*** Subpart ii [4 pts]
+
+Second subpart.
+
+** Part b [12 pts]
+
+Second part of the question.
+
+*** Subpart i [6 pts]
+
+Another subpart here.
+
+*** Subpart ii [6 pts]
+
+Final subpart.
+
+* Question 4 [5 pts]
+
+A simple question without parts.
+
+* Question 5 [10 pts]
+
+What is the capital of France?
+
+- London
+- Berlin
+- @correct Paris
+- Madrid
+
+* Question 6 [10 pts]
+
+Which of the following are prime numbers? (Select all that apply)
+
++ @correct 2
++ @correct 3
++ 4
++ @correct 5
+
+* Question 7 [15 pts]
+
+What is $2 + 2$?
+
+- 3
+- @correct 4
+- 5
+- 6
+
+** Part a [5 pts]
+
+Explain your answer.
+
+** Part b [10 pts]
+
+Which operations are commutative?
+
++ @correct Addition
++ Subtraction
++ @correct Multiplication
++ Division
+
+* * Question 2 [15 pts]
+What is the atomic number of oxygen?
+
+:solution:
+The atomic number of oxygen is 8.
+
+| Element  | Symbol | Atomic Number |
+|----------+--------+---------------|
+| Oxygen   | O      |             8 |
+| Hydrogen | H      |             1 |
+| Carbon   | C      |             6 |
+
+This means:
+- 8 protons in the nucleus
+- 8 electrons orbiting the nucleus
+:end:
+
