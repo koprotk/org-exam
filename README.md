@@ -67,7 +67,7 @@ For parts use `**` but depends to have a question before.
 ```
 
 ## Subparts
-Every part can be devided in subparts for every subpart just use `***`. And a part should be before:
+Every part can be divided in subparts for every subpart just use `***`. And a part should be before:
 ``` org
 *
 **
