@@ -49,8 +49,8 @@ doom sync
 ```
 
 2. To export, use the following shortcuts:
- - If you want to export the latex document: `C-c C-e E l`
- - If you want to get the latex and pdf: `C-c C-e E o`
+ - If you want to export the latex document: `C-c C-e l l`
+ - If you want to get the latex and pdf: `C-c C-e l o`
 
 # Features supported
 ## questions (of course)

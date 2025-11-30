@@ -4,7 +4,8 @@
 #+LATEX_CLASS: exam
 #+LATEX_HEADER: \usepackage{amsmath}
 #+LATEX_HEADER: \usepackage{amssymb}
-#+LATEX_CLASS_OPTIONS: noanswers
+#+LATEX_CLASS_OPTIONS: answers
+#+LANGUAGE: es
 
 * Question 1 [10 pts]
 
@@ -110,20 +111,7 @@ Which operations are commutative?
 + @correct Multiplication
 + Division
 
-* * Question 2 [15 pts]
-What is the atomic number of oxygen?
-
+* Question  with solution
 :solution:
-The atomic number of oxygen is 8.
-
-| Element  | Symbol | Atomic Number |
-|----------+--------+---------------|
-| Oxygen   | O      |             8 |
-| Hydrogen | H      |             1 |
-| Carbon   | C      |             6 |
-
-This means:
-- 8 protons in the nucleus
-- 8 electrons orbiting the nucleus
+Here is the solution box
 :end:
-
