@@ -46,11 +46,42 @@
 ;;; Code:
 
 (require 'ox-latex)
+(require 'cl-lib)
 
-;;; Configuration Variables
+;;; Customisation
 
-(defvar org-exam-current-class nil
-  "Buffer-local variable to track if current export uses exam class.")
+(defgroup org-exam nil
+  "LaTeX exam document class exporter for Org mode."
+  :group 'org-export
+  :prefix "org-exam-")
+
+(defcustom org-exam-point-name " pts"
+  "Replacement text for the exam class `\\pointname' macro.
+The leading space is conventional so points render as `5 pts'.  Use a
+short, language-neutral abbreviation to keep exports portable across
+languages.  Set to nil to keep the exam class default (` point' /
+` points').  May be overridden per-document with `#+EXAM_POINT_NAME:'."
+  :type '(choice (string :tag "Replacement text")
+                 (const :tag "Use exam class default" nil))
+  :group 'org-exam)
+
+(defcustom org-exam-default-footer-center "\\thepage"
+  "Default centre footer applied when a custom header is in use.
+Switching to the `headandfoot' pagestyle (which `EXAM_HEADER_*' does)
+disables the bare page number that the plain pagestyle prints at the
+bottom of every page.  This value restores it.  Set to nil to leave the
+centre footer empty when only a header is provided."
+  :type '(choice (string :tag "LaTeX expression")
+                 (const :tag "No default" nil))
+  :group 'org-exam)
+
+(defcustom org-exam-header-image-height "1.5cm"
+  "Default LaTeX `height' for images placed in header/footer slots.
+Used when an `EXAM_HEADER_*_IMAGE' or `EXAM_FOOTER_*_IMAGE' keyword
+provides no `:height' or `:width' attribute.  Any LaTeX length is
+accepted (e.g. `2cm', `20mm', `0.8in')."
+  :type 'string
+  :group 'org-exam)
 
 ;;; Setup exam class in org-latex-classes
 
@@ -59,10 +90,10 @@
   (unless (assoc "exam" org-latex-classes)
     (add-to-list 'org-latex-classes
                  '("exam"
-                   "[DEFAULT-PACKAGES]
+                   "\\documentclass[11pt]{exam}
+[DEFAULT-PACKAGES]
 [PACKAGES]
 [EXTRA]"
-                   ;; We use custom transcoders, these are placeholders
                    ("\\section{%s}" . "\\section*{%s}")
                    ("\\subsection{%s}" . "\\subsection*{%s}")
                    ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))))
@@ -85,12 +116,13 @@
 
 (defun org-exam-headline-level-type (level)
   "Determine exam element type based on headline LEVEL.
-1 = question, 2 = part, 3 = subpart"
+1 = question, 2 = part, 3 = subpart.  Levels deeper than 3 return nil
+because the LaTeX exam class has no nesting beyond subparts."
   (cond
    ((= level 1) 'question)
    ((= level 2) 'part)
    ((= level 3) 'subpart)
-   (t 'question)))
+   (t nil)))
 
 (defun org-exam-get-direct-children (headline)
   "Get direct children headlines of HEADLINE."
@@ -124,7 +156,6 @@ contextual information."
            (raw-title (org-element-property :raw-value headline))
            (title (org-exam-clean-title raw-title))
            (points (org-exam-get-points headline)))
-      
       (cond
        ;; Question level
        ((eq type 'question)
@@ -148,9 +179,16 @@ contextual information."
                      parts-content
                      "\\end{parts}\n"))
            "\n")))
-       
-       ;; For parts and subparts, we handle them separately
-       (t "")))))
+       ;; Parts and subparts are emitted by the parent question recursively,
+       ;; so the per-headline pass returns an empty string for them.
+       ((memq type '(part subpart)) "")
+       ;; Anything deeper than subpart has no representation in the exam
+       ;; class; warn once and drop it so we don't emit \question inside
+       ;; \begin{subparts}.
+       (t
+        (message "org-exam: dropping headline %S at level %d (exam class supports up to subparts)"
+                 raw-title level)
+        "")))))
 
 (defun org-exam-get-text-content (headline info)
   "Get text content of HEADLINE excluding child headlines."
@@ -243,15 +281,17 @@ INFO is the plist with export information."
 
 (defun org-exam-process-choice-item (item info)
   "Process a single ITEM for choices/checkboxes.
-INFO is the plist with export information."
+INFO is the plist with export information.  The @correct marker is
+recognised only when it appears at the start of the item text so that a
+literal occurrence further inside the answer does not get stripped."
   (let* ((paragraph (org-element-map (org-element-contents item) 'paragraph
                       #'identity info t))
          (text (when paragraph
-                 (org-export-data (org-element-contents paragraph) info)))
-         (has-correct (and text (string-match-p "@correct" text)))
-         (clean-text (if text
-                         (replace-regexp-in-string "@correct[[:space:]]*" "" text)
-                       ""))
+                 (org-trim (org-export-data (org-element-contents paragraph) info))))
+         (has-correct (and text (string-match-p "\\`@correct\\(?:[[:space:]]\\|\\'\\)" text)))
+         (clean-text (if has-correct
+                         (replace-regexp-in-string "\\`@correct[[:space:]]*" "" text)
+                       (or text "")))
          (choice-cmd (if has-correct "\\CorrectChoice" "\\choice")))
     (concat choice-cmd " " clean-text "\n")))
 
@@ -294,112 +334,6 @@ contextual information."
                 "\\end{solution}\n"))
        ;; Other drawers - use default export
        (t (org-latex-drawer drawer contents info))))))
-
-;;; Template Function
-
-(defun org-exam-template (contents info)
-  "Return complete document string after LaTeX conversion.
-CONTENTS is the transcoded contents string.
-INFO is a plist holding export options."
-  (if (not (org-exam-is-exam-class-p info))
-      ;; Not exam class - use default LaTeX template
-      (org-latex-template contents info)
-    ;; Exam class - use custom template with questions environment
-    (let* ((latex-class (plist-get info :latex-class))
-           (class-options (let ((opts (plist-get info :latex-class-options)))
-                            (cond
-                             ;; If it's a string, clean it up
-                             ((stringp opts)
-                              (setq opts (org-trim opts))
-                              ;; Remove brackets if user included them
-                              (when (string-prefix-p "[" opts)
-                                (setq opts (substring opts 1)))
-                              (when (string-suffix-p "]" opts)
-                                (setq opts (substring opts 0 -1)))
-                              (unless (string-empty-p opts) opts))
-                             ;; Otherwise nil
-                             (t nil))))
-           (title (org-export-data (plist-get info :title) info))
-           (author (org-export-data (plist-get info :author) info))
-           (date (org-export-data (plist-get info :date) info))
-           (language (plist-get info :language))
-           ;; Use org-latex-make-preamble but without documentclass
-           (preamble (org-latex-make-preamble info))
-           ;; Add babel if language is specified
-           (babel-package (when language
-                            (format "\\usepackage[%s]{babel}\n" 
-                                    (org-exam-get-babel-language language))))
-           (latex-header (mapconcat 'identity
-                                    (org-element-map (plist-get info :parse-tree) 'keyword
-                                      (lambda (k)
-                                        (when (string= (org-element-property :key k) "LATEX_HEADER")
-                                          (org-element-property :value k))))
-                                    "\n"))
-           (latex-header-extra (mapconcat 'identity
-                                          (org-element-map (plist-get info :parse-tree) 'keyword
-                                            (lambda (k)
-                                              (when (string= (org-element-property :key k) "LATEX_HEADER_EXTRA")
-                                                (org-element-property :value k))))
-                                          "\n")))
-      (concat
-       ;; Document class
-       "\\documentclass"
-       (when class-options (format "[%s]" class-options))
-       "{" latex-class "}\n"
-       
-       ;; Preamble (packages) - properly generated by org-latex
-       preamble
-       
-       ;; Babel for language support
-       (when babel-package babel-package)
-       
-       ;; User's latex headers
-       (when (and latex-header (not (string-empty-p latex-header)))
-         (concat latex-header "\n"))
-       (when (and latex-header-extra (not (string-empty-p latex-header-extra)))
-         (concat latex-header-extra "\n"))
-       
-       "\n"
-       "\\begin{document}\n"
-       
-       ;; Title, author, date
-       (when title (concat "\\title{" title "}\n"))
-       (when author (concat "\\author{" author "}\n"))
-       (when date (concat "\\date{" date "}\n"))
-       (when (or title author date) "\\maketitle\n\n")
-       
-       ;; Main content in questions environment
-       "\\begin{questions}\n"
-       contents
-       "\\end{questions}\n"
-       "\\end{document}\n"))))
-
-(defun org-exam-get-babel-language (language)
-  "Convert org LANGUAGE to babel language option."
-  (cond
-   ((string= language "es") "spanish")
-   ((string= language "en") "english")
-   ((string= language "fr") "french")
-   ((string= language "de") "german")
-   ((string= language "it") "italian")
-   ((string= language "pt") "portuguese")
-   (t language)))
-
-;;; Register Filter Functions
-
-(defun org-exam-latex-headline-filter (headline backend info)
-  "Filter function for headlines.
-HEADLINE is the transcoded headline string.
-BACKEND is the export backend.
-INFO is the plist with export options."
-  ;; Only apply custom headline processing for exam class
-  (if (and (org-export-derived-backend-p backend 'latex)
-           (org-exam-is-exam-class-p info))
-      (org-exam-headline 
-       (get-text-property 0 'org-element headline)
-       headline
-       info)
-    headline))
 
 ;;; Advice Functions to Override Transcoders
 
@@ -448,12 +382,208 @@ DRAWER, CONTENTS, INFO are the standard arguments."
       (org-exam-drawer drawer contents info)
     (funcall orig-fun drawer contents info)))
 
+(defun org-exam--normalize-class-options (info)
+  "Return INFO with `:latex-class-options' bracketed if needed.
+The exam class accepts options like `answers' or `11pt,a4paper'.
+Standard Org expects users to wrap the value in brackets in
+`LATEX_CLASS_OPTIONS', but the previous version of this package was
+lenient and accepted either form.  Preserve that leniency by wrapping
+the value here when the user omitted the brackets."
+  (let* ((opts (plist-get info :latex-class-options))
+         (trimmed (and (stringp opts) (org-trim opts))))
+    (cond
+     ((or (null trimmed) (string-empty-p trimmed)) info)
+     ((string-prefix-p "[" trimmed) info)
+     (t (org-combine-plists info
+                            (list :latex-class-options
+                                  (format "[%s]" trimmed)))))))
+
+(defun org-exam--inject-babel (info)
+  "Return INFO with babel auto-loaded when missing.
+Standard `org-latex' does not add babel unless the user requests it, but
+exams almost always want it for the document language.  Inject a babel
+declaration with the AUTO marker so `org-latex-guess-babel-language'
+substitutes the correct language.  Skip injection when the user already
+loaded babel or polyglossia themselves."
+  (let* ((header (or (plist-get info :latex-header) ""))
+         (header-extra (or (plist-get info :latex-header-extra) ""))
+         (existing (concat header "\n" header-extra)))
+    (if (string-match-p "\\\\usepackage[^\n{]*{\\(babel\\|polyglossia\\)}"
+                        existing)
+        info
+      (org-combine-plists info
+                          (list :latex-header
+                                (concat header
+                                        "\n\\usepackage[AUTO]{babel}"))))))
+
+(defun org-exam--get-keyword (info key)
+  "Return the value of the first KEY keyword in INFO, or nil.
+KEY is matched literally (e.g. \"EXAM_HEADER_LEFT\")."
+  (cl-some
+   (lambda (k)
+     (and (string= (org-element-property :key k) key)
+          (org-element-property :value k)))
+   (org-element-map (plist-get info :parse-tree) 'keyword #'identity)))
+
+(defun org-exam--image-link-to-latex (value)
+  "Convert an Org file link at the start of VALUE to \\includegraphics.
+Returns the resulting LaTeX expression when VALUE begins with `[[file:PATH]]'
+or `[[PATH]]', possibly followed by `:height SIZE' and/or `:width SIZE'
+attributes.  Returns nil when VALUE is not an image link, so callers can
+fall back to using the value verbatim.
+
+The link description, if present (`[[PATH][desc]]'), is ignored — there is
+no equivalent for it in a LaTeX header.  When no size attribute is given,
+`org-exam-header-image-height' supplies the default."
+  (when (and value
+             (string-match
+              "\\`[[:space:]]*\\[\\[\\(?:file:\\)?\\([^]\n]+\\)\\(?:\\]\\[[^]\n]*\\)?\\]\\][[:space:]]*\\(.*\\)\\'"
+              value))
+    (let* ((path (match-string 1 value))
+           (attrs (match-string 2 value))
+           (height (and (string-match ":height[[:space:]]+\\([^[:space:]]+\\)"
+                                      attrs)
+                        (match-string 1 attrs)))
+           (width (and (string-match ":width[[:space:]]+\\([^[:space:]]+\\)"
+                                     attrs)
+                       (match-string 1 attrs))))
+      (format "\\includegraphics[%s]{%s}"
+              (cond
+               (width (format "width=%s" width))
+               (height (format "height=%s" height))
+               (t (format "height=%s" org-exam-header-image-height)))
+              path))))
+
+(defun org-exam--slot-value (info slot)
+  "Return the LaTeX expression for header/footer SLOT.
+SLOT is the suffix after `EXAM_' (e.g. \"HEADER_LEFT\").  When the
+keyword value starts with an Org file link, it is converted to an
+`\\includegraphics' call so that images can be placed the org-mode way."
+  (let ((raw (org-exam--get-keyword info (format "EXAM_%s" slot))))
+    (or (org-exam--image-link-to-latex raw) raw "")))
+
+(defun org-exam--header-footer-preamble (info)
+  "Build preamble snippets for header, footer, and label overrides.
+Reads `EXAM_HEADER_LEFT|CENTER|RIGHT', `EXAM_FOOTER_LEFT|CENTER|RIGHT',
+and `EXAM_POINT_NAME' from the parse tree, falling back to the matching
+customisation variables.  Returns a string of LaTeX lines (possibly
+empty)."
+  (let* ((hl (org-exam--slot-value info "HEADER_LEFT"))
+         (hc (org-exam--slot-value info "HEADER_CENTER"))
+         (hr (org-exam--slot-value info "HEADER_RIGHT"))
+         (fl (org-exam--slot-value info "FOOTER_LEFT"))
+         (fc (org-exam--slot-value info "FOOTER_CENTER"))
+         (fr (org-exam--slot-value info "FOOTER_RIGHT"))
+         ;; Keyword values come trimmed by Org, so leading whitespace is
+         ;; impossible to express that way.  Add one space to keep
+         ;; "5 puntos" readable; users wanting full control should set
+         ;; `org-exam-point-name' directly.
+         (point-name-kw (org-exam--get-keyword info "EXAM_POINT_NAME"))
+         (point-name (cond
+                      ((and point-name-kw (not (string-blank-p point-name-kw)))
+                       (concat " " (org-trim point-name-kw)))
+                      (t org-exam-point-name)))
+         (has-header (not (and (string-blank-p hl)
+                               (string-blank-p hc)
+                               (string-blank-p hr))))
+         (has-footer (not (and (string-blank-p fl)
+                               (string-blank-p fc)
+                               (string-blank-p fr))))
+         (need-headandfoot (or has-header has-footer))
+         (lines nil))
+    (when point-name
+      ;; The exam class defines `\pointname' as `\def\pointname#1{\gdef\@pointname{#1}}',
+      ;; so the public setter takes one argument.  Calling it directly is what
+      ;; the class expects; `\renewcommand{\pointname}{...}' instead overwrites
+      ;; the setter and leaves `\@pointname' at its default of ` \points', which
+      ;; means the margin keeps printing `point' / `points'.
+      (push (format "\\pointname{%s}" point-name) lines))
+    (when need-headandfoot
+      (push "\\pagestyle{headandfoot}" lines))
+    (when has-header
+      (push (format "\\header{%s}{%s}{%s}" hl hc hr) lines))
+    (cond
+     (has-footer
+      (push (format "\\footer{%s}{%s}{%s}" fl fc fr) lines))
+     ((and need-headandfoot org-exam-default-footer-center)
+      (push (format "\\footer{}{%s}{}" org-exam-default-footer-center) lines)))
+    (mapconcat #'identity (nreverse lines) "\n")))
+
+(defun org-exam--inject-exam-preamble (info)
+  "Append exam-specific preamble customisation to INFO's `:latex-header'."
+  (let ((snippet (org-exam--header-footer-preamble info)))
+    (if (or (null snippet) (string-empty-p snippet))
+        info
+      (org-combine-plists info
+                          (list :latex-header
+                                (concat (or (plist-get info :latex-header) "")
+                                        "\n" snippet))))))
+
+(defun org-exam--uses-headandfoot-p (info)
+  "Return non-nil when any EXAM_HEADER_* or EXAM_FOOTER_* keyword is set.
+Used to decide whether the document body needs a `\\thispagestyle' call
+so the custom header/footer survives `\\maketitle' on the first page."
+  (cl-some
+   (lambda (key)
+     (let ((v (org-exam--get-keyword info key)))
+       (and v (not (string-blank-p v)))))
+   '("EXAM_HEADER_LEFT" "EXAM_HEADER_CENTER" "EXAM_HEADER_RIGHT"
+     "EXAM_FOOTER_LEFT" "EXAM_FOOTER_CENTER" "EXAM_FOOTER_RIGHT")))
+
+(defun org-exam--user-set-option-p (info option)
+  "Return non-nil if the user explicitly set OPTION in any #+OPTIONS line.
+OPTION is the bare flag name (e.g. \"toc\")."
+  (cl-some
+   (lambda (k)
+     (and (string= (org-element-property :key k) "OPTIONS")
+          (string-match-p (format "\\b%s:" (regexp-quote option))
+                          (or (org-element-property :value k) ""))))
+   (org-element-map (plist-get info :parse-tree) 'keyword #'identity)))
+
+(defun org-exam--suppress-toc (info)
+  "Disable the table of contents for exam exports.
+A TOC is rarely useful in an exam, so default `:with-toc' to nil unless
+the user explicitly set `toc:' in `#+OPTIONS'."
+  (if (org-exam--user-set-option-p info "toc")
+      info
+    (org-combine-plists info '(:with-toc nil))))
+
+(defun org-exam--wrap-questions (contents)
+  "Wrap CONTENTS in `\\begin{questions}…\\end{questions}'.
+Anything that precedes the first `\\question' line is emitted unchanged
+before the questions environment, because the exam class's questions
+environment only accepts `\\question' commands as direct children.  This
+lets the Org \"zeroth section\" (notices, name/section fields, formula
+sheets, etc.) sit between `\\maketitle' and the first question without
+LaTeX complaining about a missing `\\item'."
+  (if (string-match "^\\\\question\\(?:\\[\\|[ \t\n]\\)" contents)
+      (let ((split (match-beginning 0)))
+        (concat (substring contents 0 split)
+                "\\begin{questions}\n"
+                (substring contents split)
+                "\\end{questions}\n"))
+    ;; No questions in the document: emit contents as-is, no wrapping.
+    contents))
+
 (defun org-exam-template-advice (orig-fun contents info)
-  "Advice for org-latex-template to support exam class.
-ORIG-FUN is the original function.
-CONTENTS, INFO are the standard arguments."
+  "Advice for `org-latex-template' to support exam class.
+ORIG-FUN is the original function.  CONTENTS, INFO are the standard
+arguments.  For exam class, wrap the question portion of CONTENTS in a
+questions environment and let the standard LaTeX template build the rest
+of the document so the preamble is generated only once."
   (if (org-exam-is-exam-class-p info)
-      (org-exam-template contents info)
+      (let ((body (org-exam--wrap-questions contents)))
+        ;; `\maketitle' issues `\thispagestyle{plain}', which would hide
+        ;; the custom header on page 1.  Re-enable headandfoot at the top
+        ;; of the body so the very first page also picks up `\header'.
+        (when (org-exam--uses-headandfoot-p info)
+          (setq body (concat "\\thispagestyle{headandfoot}\n" body)))
+        (funcall orig-fun
+                 body
+                 (org-exam--suppress-toc
+                  (org-exam--inject-exam-preamble
+                   (org-exam--inject-babel
+                    (org-exam--normalize-class-options info))))))
     (funcall orig-fun contents info)))
 
 ;;; Activation

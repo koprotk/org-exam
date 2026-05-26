@@ -2,10 +2,17 @@
 #+AUTHOR: Professor Name
 #+DATE: Fall 2025
 #+LATEX_CLASS: exam
-#+LATEX_HEADER: \usepackage{amsmath}
-#+LATEX_HEADER: \usepackage{amssymb}
 #+LATEX_CLASS_OPTIONS: answers
 #+LANGUAGE: es
+#+EXAM_HEADER_LEFT: Sample Course
+#+EXAM_HEADER_CENTER: Sample Exam
+#+EXAM_HEADER_RIGHT: Fall 2025
+#+EXAM_FOOTER_RIGHT: \thepage/\numpages
+# To put an institutional logo in the header instead of text, use an Org file
+# link.  Uncomment and point at a real image to try it out:
+# #+EXAM_HEADER_LEFT: [[file:logos/university.png]] :height 1.5cm
+# To use a different point label (e.g. Spanish), uncomment:
+# #+EXAM_POINT_NAME: puntos
 
 * Question 1 [10 pts]
 
@@ -67,9 +74,13 @@ Another subpart here.
 
 Final subpart.
 
-* Question 4 [5 pts]
+* Question 4
+:PROPERTIES:
+:POINTS: 5
+:END:
 
-A simple question without parts.
+Points can also be set via a property drawer when the question title gets
+crowded.  This question is worth 5 points without having ~[5 pts]~ in the title.
 
 * Question 5 [10 pts]
 
@@ -111,7 +122,8 @@ Which operations are commutative?
 + @correct Multiplication
 + Division
 
-* Question  with solution
+* Question with solution
 :solution:
-Here is the solution box
+Here is the solution box.  It is printed because this document is exported
+with =#+LATEX_CLASS_OPTIONS: answers=; without that flag the box is hidden.
 :end:
