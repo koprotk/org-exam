@@ -326,3 +326,4 @@ TSWLatexianTemp*
 *.elc
 flycheck_org-exam.el
 *.tex
+.agent-shell/
