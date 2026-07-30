@@ -1,6 +1,6 @@
 # org-exam
 
-An Emacs package that exports Org documents to LaTeX using the [`exam`](https://www.ctan.org/pkg/exam) document class. It plugs into the standard LaTeX exporter, so you keep using the familiar `C-c C-e l …` workflow and get an `exam`-shaped `.tex` (and PDF) out the other side.
+An Emacs package that exports Org documents to LaTeX using the [`exam`](https://www.ctan.org/pkg/exam) document class. It defines a proper [derived Org backend](https://orgmode.org/manual/Export-Back-End.html) that inherits from `latex`, so you get all standard LaTeX export features plus exam-specific markup — without advice or hacks.
 
 See [`sample-exam.org`](sample-exam.org) for a working example and [`sample-exam.pdf`](sample-exam.pdf) for the rendered output.
 
@@ -54,12 +54,14 @@ doom sync
 #+LATEX_CLASS: exam
 ```
 
-2. Export with the standard LaTeX export commands:
+2. Export with the exam-specific commands:
 
- - `C-c C-e l l` — export to LaTeX
- - `C-c C-e l o` — export to LaTeX and open the resulting PDF
+| Command                         | Result                    |
+| ------------------------------- | ------------------------- |
+| `M-x org-exam-export-to-latex`  | Export to `.tex` file     |
+| `M-x org-exam-export-as-latex`  | Preview in a buffer       |
 
-`org-exam` handles a few things for you automatically when `#+LATEX_CLASS: exam` is in effect:
+`org-exam` handles a few things for you automatically:
 
  - generates a single, deduplicated preamble (no double `\usepackage` lines);
  - loads `babel` based on the `#+LANGUAGE` keyword;
