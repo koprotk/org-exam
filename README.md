@@ -61,6 +61,15 @@ doom sync
 | `M-x org-exam-export-to-latex`  | Export to `.tex` file     |
 | `M-x org-exam-export-as-latex`  | Preview in a buffer       |
 
+To add it to the `C-c C-e` dispatch menu, add to your config:
+
+``` emacs-lisp
+(eval-after-load 'ox
+  '(org-export-add-to-dispatch
+    'org-export-dispatch
+    '("Exam" "x" org-exam-export-to-latex)))
+```
+
 `org-exam` handles a few things for you automatically:
 
  - generates a single, deduplicated preamble (no double `\usepackage` lines);
